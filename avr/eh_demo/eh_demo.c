@@ -9,14 +9,15 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/delay.h>
-#define F_CPU 1000000UL
 
-#define DELAY 5000
+#define F_CPU 1000000UL
+#define PULSE_FREQ 60
 #define PULSE_PIN 5
 #define INT_PIN 4
 
 char pcint = 0;
-int seconds = 0;
+unsigned int seconds = 0;
+int last_pulse = -1;
 
 void pulse();
 void sleep();
@@ -25,10 +26,12 @@ void init_timer();
 
 int main() {
 	init();
+	init_timer();
 	while(1) {
-		if(pcint || PINC & (1 << INT_PIN)) {
+		if((pcint || PINC & (1 << INT_PIN)) && (last_pulse < 0 || last_pulse + PULSE_FREQ <= seconds)) {
 			pcint = 0;
 			pulse();
+			last_pulse = seconds;
 		}
 		sleep();
 	}
@@ -45,7 +48,7 @@ void init_timer() {
 	OCR2A = 0;
 	OCR2B = 0;
 	TCCR2A |= (0 << COM2A1) | (0 << COM2A0) | (0 << COM2B1) | (0 << COM2B0) | (0 << WGM21) | (0 << WGM20);
-	TCCR2B |= (0 << FOC2A) | (0 << FOC2B) | (0 << WGM22) | (1 << CS22) | (0 << CS21) | (1 << CS20);
+	TCCR2B |= (0 << FOC2A) | (0 << FOC2B) | (0 << WGM22) | (1 << CS22) | (1 << CS21) | (1 << CS20);
 	//wait for (TCN2xUB, OCR2xUB, TCR2xUB)
 	while(ASSR & ((1 << TCN2UB) | (1 << OCR2AUB) | (1 << OCR2AUB) | (1 << TCR2AUB) | (1 << TCR2BUB))) {
 	}
@@ -73,7 +76,12 @@ ISR(PCINT1_vect) {
 
 ISR(TIMER2_OVF_vect) {
 	cli();
-	seconds++;
+	unsigned int temp = seconds;
+	seconds += 8;
+	//check counter for rollover
+	if(temp > seconds) {
+		last_pulse = -1;
+	}
 	sei();
 }
 
