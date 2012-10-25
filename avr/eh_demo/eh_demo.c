@@ -25,14 +25,11 @@ void init_timer();
 
 int main() {
 	init();
-	//init_timer();
 	while(1) {
-
-		while(pcint || (PINC & (1 << INT_PIN))) {
+		if(pcint || PINC & (1 << INT_PIN)) {
 			pcint = 0;
 			pulse();
 		}
-		sei();
 		sleep();
 	}
 	return 0;
@@ -71,7 +68,6 @@ void init() {
 ISR(PCINT1_vect) {
 	cli();
 	pcint = 1;
-	EIMSK |= 3;
 	sei();
 }	
 
