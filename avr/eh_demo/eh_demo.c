@@ -70,7 +70,9 @@ void init() {
 
 ISR(PCINT1_vect) {
 	cli();
-	pcint = 1;
+	if(PINC & (1 << INT_PIN)) {
+		pcint = 1;
+	}	
 	sei();
 }	
 
@@ -88,7 +90,7 @@ ISR(TIMER2_OVF_vect) {
 void pulse() {
 	cli();
 	PORTC |= (1 << PULSE_PIN);
-	_delay_ms(1000);
+	_delay_ms(1500);
 	PORTC &= ~(1 << PULSE_PIN);
 	sei();
 }
